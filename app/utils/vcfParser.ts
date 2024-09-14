@@ -12,8 +12,8 @@ export interface Contact {
     value: string;
     isPref: boolean;
   }>;
-  version?: string;
-  [key: string]: any; // For any other properties that might be in the VCF
+  photo?: string; // Base64 encoded image data
+  [key: string]: any;
 }
 
 export const parseVCF = (vcfContent: string): Contact[] => {
@@ -28,9 +28,23 @@ export const parseVCF = (vcfContent: string): Contact[] => {
       phones: []
     };
 
+    let photoData = '';
+    let isCollectingPhotoData = false;
+
     for (let line of lines) {
       line = line.trim();
-      if (!line || line === 'END:VCARD') continue;
+      if (!line || line === 'END:VCARD') {
+        if (isCollectingPhotoData) {
+          contact.photo = photoData;
+          isCollectingPhotoData = false;
+        }
+        continue;
+      }
+
+      if (isCollectingPhotoData) {
+        photoData += line;
+        continue;
+      }
 
       const [key, ...values] = line.split(':');
       const [property, ...params] = key.split(';');
@@ -55,8 +69,11 @@ export const parseVCF = (vcfContent: string): Contact[] => {
             isPref: params.includes('PREF')
           });
           break;
+        case 'PHOTO':
+          isCollectingPhotoData = true;
+          photoData = value;
+          break;
         default:
-          // Store other properties as-is
           contact[property.toLowerCase()] = value;
       }
     }

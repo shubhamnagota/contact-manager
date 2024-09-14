@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Edit, Trash2, ChevronUp, ChevronDown,User } from 'lucide-react';
 import { Contact } from '../utils/vcfParser';
 
 interface ContactListProps {
@@ -61,7 +61,8 @@ const ContactList: React.FC<ContactListProps> = ({ contacts, handleSort, sortCon
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead 
+        <TableHead>Photo</TableHead>
+        <TableHead 
             onClick={() => handleSort('name')}
             isSorted={sortConfig.key === 'name'}
             sortDirection={sortConfig.direction}
@@ -75,6 +76,15 @@ const ContactList: React.FC<ContactListProps> = ({ contacts, handleSort, sortCon
       <TableBody>
         {contacts.map((contact, index) => (
           <TableRow key={index}>
+                  <TableCell>
+              {contact.photo ? (
+                <img src={`data:image/jpeg;base64,${contact.photo}`} alt={getName(contact)} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                  <User className="h-6 w-6 text-gray-500" />
+                </div>
+              )}
+            </TableCell>
             <TableCell>{getName(contact)}</TableCell>
             <TableCell>{getPhones(contact)}</TableCell>
             <TableCell>

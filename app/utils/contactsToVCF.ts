@@ -23,6 +23,13 @@ export const contactsToVCF = (contacts: Contact[]): string => {
       });
     }
 
+    if (contact.photo) {
+      lines.push('PHOTO;ENCODING=BASE64;TYPE=JPEG:');
+      // Split the base64 string into lines of 75 characters
+      const photoLines = contact.photo.match(/.{1,75}/g) || [];
+      lines.push(...photoLines);
+    }
+
     // Add other fields as necessary
 
     lines.push('END:VCARD');
