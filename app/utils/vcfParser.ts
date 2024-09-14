@@ -1,4 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export interface Contact {
+  id: string;
   fullName?: string;
   name?: {
     firstName: string;
@@ -44,6 +47,7 @@ export const parseVCF = (vcfContent: string): Contact[] => {
 
     const lines = vcard.split('\n');
     const contact: Contact = {
+      id: uuidv4(),
       phones: []
     };
 

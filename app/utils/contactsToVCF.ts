@@ -16,6 +16,7 @@ const encodeValue = (value: string): string => {
 
 export const contactsToVCF = (contacts: Contact[]): string => {
   return contacts.map(contact => {
+    const { id, ...contactWithoutId } = contact;
     const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
 
     if (contact.fullName) {
