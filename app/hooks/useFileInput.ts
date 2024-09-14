@@ -1,22 +1,30 @@
-import { useRef } from 'react';
+"use client";
 
-export const useFileInput = (onFileSelect) => {
-  const fileInputRef = useRef(null);
+import { useRef, useCallback } from 'react';
 
-  const handleButtonClick = () => {
-    fileInputRef.current.click();
-  };
+interface UseFileInputResult {
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  handleButtonClick: () => void;
+  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
+export const useFileInput = (onFileSelect: (file: File) => void): UseFileInputResult => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleButtonClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
       onFileSelect(file);
     }
-  };
+  }, [onFileSelect]);
 
   return {
     fileInputRef,
     handleButtonClick,
-    handleFileChange,
+    handleFileChange
   };
 };
