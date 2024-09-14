@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, HelpCircle, Import, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Upload, HelpCircle, Download } from "lucide-react";
 import { parseVCF, Contact } from "../utils/vcfParser";
 import { contactsToVCF } from "../utils/contactsToVCF";
 import { useFileInput } from "../hooks/useFileInput";
@@ -12,8 +13,10 @@ import Pagination from "./Pagination";
 import FileUpload from "./FileUpload";
 import RecordCount from "./RecordCount";
 import EditContactModal from "./EditContactModal";
-import ExportGuide from "./ExportGuide";
 import ImportGuide from "./ImportGuide";
+import ExportGuide from "./ExportGuide";
+
+
 
 const ContactManager: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -25,8 +28,15 @@ const ContactManager: React.FC = () => {
   }>({ key: "name", direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [showExportGuide, setShowExportGuide] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
+  const [showExportGuide, setShowExportGuide] = useState(false);
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [groupUpdateText, setGroupUpdateText] = useState("");
+  const [groupUpdatePosition, setGroupUpdatePosition] = useState<
+    "prepend" | "append"
+  >("prepend");
 
   const { fileInputRef, handleButtonClick, handleFileChange } = useFileInput(
     (file: File) => {
@@ -35,9 +45,9 @@ const ContactManager: React.FC = () => {
         const vcfContent = e.target?.result as string;
         const parsedContacts = parseVCF(vcfContent);
         setContacts(parsedContacts);
+        setShowExportGuide(false);
       };
       reader.readAsText(file);
-      setShowExportGuide(false);
     }
   );
 
@@ -70,24 +80,110 @@ const ContactManager: React.FC = () => {
     return sortableContacts;
   }, [filteredContacts, sortConfig]);
 
+  const toggleContactSelection = useCallback((contactId: string) => {
+    setSelectedContactIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(contactId)) {
+        newSet.delete(contactId);
+      } else {
+        newSet.add(contactId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const toggleAllContacts = useCallback(() => {
+    if (selectedContactIds.size === sortedContacts.length) {
+      setSelectedContactIds(new Set());
+    } else {
+      setSelectedContactIds(
+        new Set(sortedContacts.map((contact) => contact.id))
+      );
+    }
+  }, [sortedContacts, selectedContactIds]);
+
+  const handleGroupUpdate = useCallback(() => {
+    if (groupUpdateText.trim() === "") return;
+
+    setContacts((prevContacts) =>
+      prevContacts.map((contact) => {
+        if (selectedContactIds.has(contact.id)) {
+          const currentName = contact.fullName || "";
+          const newName =
+            groupUpdatePosition === "prepend"
+              ? `${groupUpdateText} ${currentName}`
+              : `${currentName} ${groupUpdateText}`;
+
+          return {
+            ...contact,
+            fullName: newName.trim(),
+            name: {
+              ...contact.name,
+              firstName: newName.trim(),
+              lastName: "",
+            },
+          };
+        }
+        return contact;
+      })
+    );
+
+    setGroupUpdateText("");
+    setSelectedContactIds(new Set());
+  }, [groupUpdateText, groupUpdatePosition, selectedContactIds]);
+
+  const handleSort = useCallback((key: string) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction:
+        prevConfig.key === key && prevConfig.direction === "asc"
+          ? "desc"
+          : "asc",
+    }));
+  }, []);
+
+  const handleEdit = useCallback(
+    (index: number) => {
+      setEditingContact(sortedContacts[index]);
+    },
+    [sortedContacts]
+  );
+
+  const handleDelete = useCallback(
+    (index: number) => {
+      const contactToDelete = sortedContacts[index];
+      setContacts((prevContacts) =>
+        prevContacts.filter((contact) => contact.id !== contactToDelete.id)
+      );
+      setSelectedContactIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(contactToDelete.id);
+        return newSet;
+      });
+    },
+    [sortedContacts]
+  );
+
+  const handleExport = useCallback(() => {
+    const vcfContent = contactsToVCF(contacts);
+    const blob = new Blob([vcfContent], { type: "text/vcard" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "contacts.vcf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setShowImportGuide(true);
+  }, [contacts]);
+
   const indexOfLastContact = currentPage * contactsPerPage;
   const indexOfFirstContact = indexOfLastContact - contactsPerPage;
   const currentContacts = sortedContacts.slice(
     indexOfFirstContact,
     indexOfLastContact
   );
-
-  const handleSort = (key: string) => {
-    let direction: "asc" | "desc" = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const handleEdit = (index: number) => {
-    setEditingContact(currentContacts[index]);
-  };
 
   const handleSaveEdit = (updatedContact: Contact) => {
     setContacts((prevContacts) =>
@@ -100,33 +196,6 @@ const ContactManager: React.FC = () => {
 
   const handleCloseEdit = () => {
     setEditingContact(null);
-  };
-
-  const handleDelete = (index: number) => {
-    const contactToDelete = currentContacts[index];
-    const newContacts = contacts.filter(
-      (contact) => contact !== contactToDelete
-    );
-    setContacts(newContacts);
-
-    // If we're on the last page and it's now empty, go to the previous page
-    if (currentContacts.length === 1 && currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleExport = () => {
-    const vcfContent = contactsToVCF(contacts);
-    const blob = new Blob([vcfContent], { type: "text/vcard" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "contacts.vcf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setShowImportGuide(true);
   };
 
   return (
@@ -145,12 +214,40 @@ const ContactManager: React.FC = () => {
             totalRecords={contacts.length}
             filteredRecords={sortedContacts.length}
           />
-          <ContactList
-            contacts={currentContacts}
+          <div className="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <Input
+              placeholder="Enter text to prepend/append"
+              value={groupUpdateText}
+              onChange={(e) => setGroupUpdateText(e.target.value)}
+            />
+            <select
+              value={groupUpdatePosition}
+              onChange={(e) =>
+                setGroupUpdatePosition(e.target.value as "prepend" | "append")
+              }
+              className="border border-gray-300 rounded-md px-2 py-1"
+            >
+              <option value="prepend">Prepend</option>
+              <option value="append">Append</option>
+            </select>
+            <Button
+              onClick={handleGroupUpdate}
+              disabled={
+                selectedContactIds.size === 0 || groupUpdateText.trim() === ""
+              }
+            >
+              Update Selected Contacts
+            </Button>
+          </div>
+          <ContactList 
+            contacts={sortedContacts}
             handleSort={handleSort}
             sortConfig={sortConfig}
             handleEdit={handleEdit}
             handleDelete={handleDelete}
+            selectedContactIds={selectedContactIds}
+            toggleContactSelection={toggleContactSelection}
+            toggleAllContacts={toggleAllContacts}
           />
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4 space-y-2 sm:space-y-0">
             <Pagination
@@ -159,18 +256,12 @@ const ContactManager: React.FC = () => {
               contactsPerPage={contactsPerPage}
               setCurrentPage={setCurrentPage}
             />
-            <Button onClick={handleExport} className="w-full sm:w-auto">
-              <Upload className="h-4 w-4 mr-2" />
-              Export VCF
-            </Button>
-            <Button
-              onClick={() => setShowImportGuide(true)}
-              variant="outline"
-              className="w-full sm:w-auto"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              How to Import
-            </Button>
+            <div className="flex space-x-2">
+              <Button onClick={handleExport} className="w-full sm:w-auto">
+                <Upload className="h-4 w-4 mr-2" />
+                Export VCF
+              </Button>
+            </div>
           </div>
         </>
       ) : (
@@ -191,11 +282,11 @@ const ContactManager: React.FC = () => {
           onClose={handleCloseEdit}
         />
       )}
-      {showExportGuide && (
-        <ExportGuide onClose={() => setShowExportGuide(false)} />
-      )}
       {showImportGuide && (
         <ImportGuide onClose={() => setShowImportGuide(false)} />
+      )}
+      {showExportGuide && (
+        <ExportGuide onClose={() => setShowExportGuide(false)} />
       )}
     </div>
   );
