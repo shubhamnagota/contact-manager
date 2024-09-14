@@ -10,6 +10,8 @@ import SearchBar from './SearchBar';
 import Pagination from './Pagination';
 import FileUpload from './FileUpload';
 import RecordCount from './RecordCount';
+import EditContactModal from './EditContactModal';
+import { contactsToVCF } from '../utils/contactsToVCF';
 
 const ContactManager: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -17,6 +19,7 @@ const ContactManager: React.FC = () => {
   const [contactsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'name', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   const { fileInputRef, handleButtonClick, handleFileChange } = useFileInput((file: File) => {
     const reader = new FileReader();
@@ -67,8 +70,22 @@ const ContactManager: React.FC = () => {
     setSortConfig({ key, direction });
   };
 
+
   const handleEdit = (index: number) => {
-    console.log('Edit contact at index:', index);
+    setEditingContact(currentContacts[index]);
+  };
+
+  const handleSaveEdit = (updatedContact: Contact) => {
+    setContacts(prevContacts => 
+      prevContacts.map(contact => 
+        contact === editingContact ? updatedContact : contact
+      )
+    );
+    setEditingContact(null);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingContact(null);
   };
 
   const handleDelete = (index: number) => {
@@ -83,8 +100,18 @@ const ContactManager: React.FC = () => {
   };
 
   const handleExport = () => {
-    console.log('Exporting contacts...');
+    const vcfContent = contactsToVCF(contacts);
+    const blob = new Blob([vcfContent], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'contacts.vcf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
+
 
   return (
     <div className="max-w-full overflow-x-auto">
@@ -121,6 +148,13 @@ const ContactManager: React.FC = () => {
         </>
       ) : (
         <p>No contacts uploaded yet. Please select a VCF file to begin.</p>
+      )}
+            {editingContact && (
+        <EditContactModal
+          contact={editingContact}
+          onSave={handleSaveEdit}
+          onClose={handleCloseEdit}
+        />
       )}
     </div>
   );
