@@ -9,6 +9,7 @@ import ContactList from './ContactList';
 import SearchBar from './SearchBar';
 import Pagination from './Pagination';
 import FileUpload from './FileUpload';
+import RecordCount from './RecordCount';
 
 const ContactManager: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -71,7 +72,14 @@ const ContactManager: React.FC = () => {
   };
 
   const handleDelete = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
+    const contactToDelete = currentContacts[index];
+    const newContacts = contacts.filter(contact => contact !== contactToDelete);
+    setContacts(newContacts);
+    
+    // If we're on the last page and it's now empty, go to the previous page
+    if (currentContacts.length === 1 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleExport = () => {
@@ -90,6 +98,7 @@ const ContactManager: React.FC = () => {
       </div>
       {contacts.length > 0 ? (
         <>
+          <RecordCount totalRecords={contacts.length} filteredRecords={sortedContacts.length} />
           <ContactList 
             contacts={currentContacts}
             handleSort={handleSort}

@@ -3,19 +3,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
-
-interface Contact {
-  fullName?: string;
-  name?: {
-    firstName: string;
-    lastName: string;
-  };
-  phones?: Array<{
-    type: string;
-    value: string;
-    isPref: boolean;
-  }>;
-}
+import { Contact } from '../utils/vcfParser';
 
 interface ContactListProps {
   contacts: Contact[];
