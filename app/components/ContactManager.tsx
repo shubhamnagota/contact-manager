@@ -87,8 +87,8 @@ const ContactManager: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="mb-4 flex space-x-2">
+    <div className="max-w-full overflow-x-auto">
+      <div className="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
         <FileUpload 
           fileInputRef={fileInputRef}
           handleButtonClick={handleButtonClick}
@@ -106,14 +106,14 @@ const ContactManager: React.FC = () => {
             handleEdit={handleEdit}
             handleDelete={handleDelete}
           />
-          <div className="flex justify-between items-center mt-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-4 space-y-2 sm:space-y-0">
             <Pagination 
               currentPage={currentPage}
               totalContacts={sortedContacts.length}
               contactsPerPage={contactsPerPage}
               setCurrentPage={setCurrentPage}
             />
-            <Button onClick={handleExport}>
+            <Button onClick={handleExport} className="w-full sm:w-auto">
               <Upload className="h-4 w-4 mr-2" />
               Export VCF
             </Button>
@@ -122,7 +122,7 @@ const ContactManager: React.FC = () => {
       ) : (
         <p>No contacts uploaded yet. Please select a VCF file to begin.</p>
       )}
-    </>
+    </div>
   );
 };
 
