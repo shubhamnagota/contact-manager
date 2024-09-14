@@ -37,14 +37,16 @@ const getPhones = (contact: Contact): React.ReactNode => {
   return 'N/A';
 };
 
-const ContactRow = memo(({ contact, index, isSelected, onToggle, onEdit, onDelete }: {
+interface ContactRowProps {
   contact: Contact;
   index: number;
   isSelected: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}) => (
+}
+
+const ContactRow: React.FC<ContactRowProps> = memo(({ contact, index, isSelected, onToggle, onEdit, onDelete }) => (
   <tr>
     <td className="px-6 py-4 whitespace-nowrap">
       <Checkbox
@@ -67,14 +69,18 @@ const ContactRow = memo(({ contact, index, isSelected, onToggle, onEdit, onDelet
   </tr>
 ));
 
-const ContactCard = memo(({ contact, index, isSelected, onToggle, onEdit, onDelete }: {
+ContactRow.displayName = 'ContactRow';
+
+interface ContactCardProps {
   contact: Contact;
   index: number;
   isSelected: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}) => (
+}
+
+const ContactCard: React.FC<ContactCardProps> = memo(({ contact, index, isSelected, onToggle, onEdit, onDelete }) => (
   <div className="bg-white shadow rounded-lg p-4 mb-4">
     <div className="flex items-center mb-2">
       <Checkbox
@@ -107,6 +113,8 @@ const ContactCard = memo(({ contact, index, isSelected, onToggle, onEdit, onDele
     </div>
   </div>
 ));
+
+ContactCard.displayName = 'ContactCard';
 
 const ContactList: React.FC<ContactListProps> = ({ 
   contacts, 
@@ -188,5 +196,7 @@ const ContactList: React.FC<ContactListProps> = ({
     </div>
   );
 };
+
+ContactList.displayName = 'ContactList';
 
 export default memo(ContactList);
