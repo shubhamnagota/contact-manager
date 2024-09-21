@@ -5,11 +5,14 @@ import IntroductionPage from "./components/IntroductionPage";
 import ContactManager from "./components/ContactManager";
 
 export default function Home() {
-  const [showIntro, setShowIntro] = useState(true);
+  const introAlreadyShown = !localStorage.getItem('showIntro')
+  const [showIntro, setShowIntro] = useState(introAlreadyShown);
 
   const handleGetStarted = () => {
     setShowIntro(false);
+    localStorage.setItem('showIntro', 'true')
   };
+
   return (
     <div className="container mx-auto p-4">
       <div>

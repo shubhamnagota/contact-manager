@@ -15,6 +15,9 @@ const IntroductionPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted
         <p className="text-xl text-muted-foreground mb-8">
           Easily manage, edit, and organize your contacts with our powerful and user-friendly application.
         </p>
+        <Button onClick={onGetStarted} size="lg" className="mb-8">
+          Get Started
+        </Button>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <FeatureCard
             icon={<Upload className="h-8 w-8" />}
@@ -37,9 +40,6 @@ const IntroductionPage: React.FC<{ onGetStarted: () => void }> = ({ onGetStarted
             description="Export your contacts to VCF format for backup or sharing."
           />
         </div>
-        <Button onClick={onGetStarted} size="lg">
-          Get Started
-        </Button>
       </div>
     </div>
   );
