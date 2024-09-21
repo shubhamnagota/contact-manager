@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, HelpCircle, Download, Merge } from "lucide-react";
+import { Upload, HelpCircle, FileText, Merge } from "lucide-react";
 import { parseVCF, Contact } from "../utils/vcfParser";
 import { contactsToVCF } from "../utils/contactsToVCF";
 import { useFileInput } from "../hooks/useFileInput";
@@ -37,8 +37,6 @@ const ContactManager: React.FC = () => {
   const [groupUpdatePosition, setGroupUpdatePosition] = useState<
     "prepend" | "append"
   >("prepend");
-  const [showMergeModal, setShowMergeModal] = useState(false);
-  const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
   const [showMergeByMobileModal, setShowMergeByMobileModal] = useState(false);
   const [showMergeByNameModal, setShowMergeByNameModal] = useState(false);
 
@@ -202,14 +200,6 @@ const ContactManager: React.FC = () => {
     setEditingContact(null);
   };
 
-  // const handleMergeContacts = (mergedContact: Contact) => {
-  //   const updatedContacts = contacts.filter(
-  //     (c) => !contactsToMerge.includes(c)
-  //   );
-  //   setContacts([...updatedContacts, mergedContact]);
-  //   setContactsToMerge([]);
-  // };
-
   const handleMergeByMobile = () => {
     setShowMergeByMobileModal(true);
   };
@@ -232,11 +222,33 @@ const ContactManager: React.FC = () => {
   };
 
   const handleMergeContactsForName = (mergedContacts: Contact[]) => {
-    // Remove old contacts and add merged ones
-    const mergedIds = new Set(mergedContacts.map(c => c.id));
-    const updatedContacts = contacts.filter(contact => !mergedIds.has(contact.id));
-    setContacts([...updatedContacts, ...mergedContacts]);
+    setContacts(prevContacts => {
+      const mergedIds = new Set(mergedContacts.flatMap(contact => 
+        contact.phones?.map(phone => phone.value) || []
+      ));
+      
+      // Remove old contacts that were merged
+      const updatedContacts = prevContacts.filter(contact => 
+        !contact.phones?.some(phone => mergedIds.has(phone.value))
+      );
+      
+      // Add merged contacts
+      return [...updatedContacts, ...mergedContacts];
+    });
   };
+
+const loadDemoContacts = async () => {
+  try {
+    const response = await fetch('/demo.vcf');
+    const vcfContent = await response.text();
+    const demoContacts = parseVCF(vcfContent);
+    setContacts(demoContacts);
+  } catch (error) {
+    console.error('Error loading demo contacts:', error);
+    alert('Failed to load demo contacts. Please try again.');
+  }
+};
+
 
   return (
     <div className="max-w-full overflow-x-auto">
@@ -246,6 +258,10 @@ const ContactManager: React.FC = () => {
           handleButtonClick={handleButtonClick}
           handleFileChange={handleFileChange}
         />
+         <Button onClick={loadDemoContacts}>
+          <FileText className="h-4 w-4 mr-2" />
+          Load Demo Contacts
+        </Button>
         <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       </div>
       {contacts.length > 0 ? (

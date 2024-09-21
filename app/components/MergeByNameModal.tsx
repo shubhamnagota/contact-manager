@@ -68,23 +68,32 @@ const MergeByNameModal: React.FC<MergeByNameModalProps> = ({ isOpen, onClose, co
   };
 
   const handleMerge = () => {
-    const mergedContacts: Contact[] = mergeGroups.flatMap(group => {
+    const mergedContacts: Contact[] = mergeGroups.map(group => {
       const selectedContacts = group.contacts.filter((_, index) => group.selected[index]);
-      if (selectedContacts.length > 1) {
+      if (selectedContacts.length > 0) {
         // Merge selected contacts
         const mergedContact: Contact = {
           ...selectedContacts[0],
           id: selectedContacts[0].id,
           fullName: group.finalName,
-          phones: selectedContacts.flatMap(c => c.phones || []),
-          categories: Array.from(new Set(selectedContacts.flatMap(c => c.categories || []))),
+          phones: [],
           // Merge other fields as needed
         };
-        return [mergedContact];
-      } else {
-        // Return selected contacts without merging
-        return selectedContacts;
+
+        // Merge phone numbers
+        const uniquePhones = new Map<string, { type: string; value: string; isPref: boolean }>();
+        selectedContacts.forEach(contact => {
+          contact.phones?.forEach(phone => {
+            if (!uniquePhones.has(phone.value)) {
+              uniquePhones.set(phone.value, phone);
+            }
+          });
+        });
+        mergedContact.phones = Array.from(uniquePhones.values());
+
+        return mergedContact;
       }
+      return selectedContacts[0];
     });
 
     onMerge(mergedContacts);
@@ -117,8 +126,11 @@ const MergeByNameModal: React.FC<MergeByNameModalProps> = ({ isOpen, onClose, co
                     checked={group.selected[contactIndex]}
                     onCheckedChange={() => handleSelectionChange(groupIndex, contactIndex)}
                   />
-                  <Label htmlFor={`contact-${groupIndex}-${contactIndex}`}>
-                    {contact.fullName} ({contact.phones?.map(p => p.value).join(', ')})
+                  <Label htmlFor={`contact-${groupIndex}-${contactIndex}`} className="flex-grow">
+                    <div>{contact.fullName}</div>
+                    <div className="text-sm text-gray-500">
+                      {contact.phones?.map(p => p.value).join(', ')}
+                    </div>
                   </Label>
                 </div>
               ))}
