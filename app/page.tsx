@@ -5,7 +5,7 @@ import IntroductionPage from "./components/IntroductionPage";
 import ContactManager from "./components/ContactManager";
 
 export default function Home() {
-  const introAlreadyShown = !localStorage.getItem('showIntro')
+  const introAlreadyShown = typeof localStorage !== "undefined" && !localStorage.getItem('showIntro')
   const [showIntro, setShowIntro] = useState(introAlreadyShown);
 
   const handleGetStarted = () => {

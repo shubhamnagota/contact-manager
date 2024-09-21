@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, HelpCircle, Download } from "lucide-react";
+import { Upload, HelpCircle, Download, Merge } from "lucide-react";
 import { parseVCF, Contact } from "../utils/vcfParser";
 import { contactsToVCF } from "../utils/contactsToVCF";
 import { useFileInput } from "../hooks/useFileInput";
@@ -15,8 +15,8 @@ import RecordCount from "./RecordCount";
 import EditContactModal from "./EditContactModal";
 import ImportGuide from "./ImportGuide";
 import ExportGuide from "./ExportGuide";
-
-
+import MergeByMobileModal from "./MergeByMobileModal";
+import MergeByNameModal from "./MergeByNameModal";
 
 const ContactManager: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -37,6 +37,10 @@ const ContactManager: React.FC = () => {
   const [groupUpdatePosition, setGroupUpdatePosition] = useState<
     "prepend" | "append"
   >("prepend");
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [contactsToMerge, setContactsToMerge] = useState<Contact[]>([]);
+  const [showMergeByMobileModal, setShowMergeByMobileModal] = useState(false);
+  const [showMergeByNameModal, setShowMergeByNameModal] = useState(false);
 
   const { fileInputRef, handleButtonClick, handleFileChange } = useFileInput(
     (file: File) => {
@@ -198,6 +202,42 @@ const ContactManager: React.FC = () => {
     setEditingContact(null);
   };
 
+  // const handleMergeContacts = (mergedContact: Contact) => {
+  //   const updatedContacts = contacts.filter(
+  //     (c) => !contactsToMerge.includes(c)
+  //   );
+  //   setContacts([...updatedContacts, mergedContact]);
+  //   setContactsToMerge([]);
+  // };
+
+  const handleMergeByMobile = () => {
+    setShowMergeByMobileModal(true);
+  };
+
+  const handleMergeByName = () => {
+    setShowMergeByNameModal(true);
+  };
+
+  const handleMergeContactsForMobile = (mergedContacts: Contact[]) => {
+    // Remove old contacts and add merged ones
+    const updatedContacts = contacts.filter(
+      (contact) =>
+        !mergedContacts.some((mergedContact) =>
+          mergedContact.phones?.some((phone) =>
+            contact.phones?.some((p) => p.value === phone.value)
+          )
+        )
+    );
+    setContacts([...updatedContacts, ...mergedContacts]);
+  };
+
+  const handleMergeContactsForName = (mergedContacts: Contact[]) => {
+    // Remove old contacts and add merged ones
+    const mergedIds = new Set(mergedContacts.map(c => c.id));
+    const updatedContacts = contacts.filter(contact => !mergedIds.has(contact.id));
+    setContacts([...updatedContacts, ...mergedContacts]);
+  };
+
   return (
     <div className="max-w-full overflow-x-auto">
       <div className="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
@@ -239,7 +279,17 @@ const ContactManager: React.FC = () => {
               Update Selected Contacts
             </Button>
           </div>
-          <ContactList 
+          <div className="flex space-x-2 mb-4">
+            <Button onClick={handleMergeByMobile}>
+              <Merge className="h-4 w-4 mr-2" />
+              Merge by Mobile
+            </Button>
+            <Button onClick={handleMergeByName}>
+              <Merge className="h-4 w-4 mr-2" />
+              Merge by Name
+            </Button>
+          </div>
+          <ContactList
             contacts={sortedContacts}
             handleSort={handleSort}
             sortConfig={sortConfig}
@@ -288,6 +338,18 @@ const ContactManager: React.FC = () => {
       {showExportGuide && (
         <ExportGuide onClose={() => setShowExportGuide(false)} />
       )}
+      <MergeByMobileModal
+        isOpen={showMergeByMobileModal}
+        onClose={() => setShowMergeByMobileModal(false)}
+        contacts={contacts}
+        onMerge={handleMergeContactsForMobile}
+      />
+            <MergeByNameModal
+        isOpen={showMergeByNameModal}
+        onClose={() => setShowMergeByNameModal(false)}
+        contacts={contacts}
+        onMerge={handleMergeContactsForName}
+      />
     </div>
   );
 };
