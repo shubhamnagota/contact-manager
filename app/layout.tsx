@@ -8,11 +8,7 @@ export const metadata: Metadata = {
   title: 'Contact Manager',
   description: 'A simple and efficient contact management application',
   manifest: '/manifest.json',
-  themeColor: '#000000',
-  icons: [
-    { rel: 'icon', url: '/favicon.ico' },
-    { rel: 'apple-touch-icon', url: '/icon-192x192.png' },
-  ],
+  themeColor: '#000000'
 }
 export default function RootLayout({
   children,
